@@ -1,14 +1,18 @@
 <?php
-/*
-    To-do:
-    1. bug-fix: type checking of parameters
-    2. reduce Component code, refer to @Note-1
-*/
+    require_once(__DIR__.'/vendor/JSMin.php');
+    
+    trait Logging{
+        protected static function writeToLogFile($message){
+            file_put_contents(__DIR__."/../logs/log.txt",$message, FILE_APPEND|LOCK_EX);
+        }
+    }
 
     class Component{
+        use Logging;
+
         private $childArray;
-        private static $jsArray=array(), $cssArray=array(), $jsCounter=0, $cssCounter=0;
         private $counter;
+        protected static $jsArray=array(), $cssArray=array(), $jsCounter=0, $cssCounter=0;
 
         /* -- user-support functions (For for a users to use direct)-- */
         public function __construct(){ 
@@ -21,14 +25,14 @@
             /*************************
              * @functionName: attachChildComponent
              * @argument: 
-             *   $childComponent: child 'Component' class object 
+             *   $childComponent: child "Component" class object 
              * @details: 
              *   At time of generateComponentCode() is called, all child code is appended in the order of attachment,
              *   and generates the final htmlCode belonging to the component.
              * @returns:
              *   handler: a handler to the child-element attached, for any future reference
              *************************/
-            if(is_a($childComponent, 'Component') !== TRUE){
+            if(is_a($childComponent, "Component") !== TRUE){
                 throw new Exception(
                     "<h2/>500 Internal Server Error<h2>".
                     "<script>console.log('Error: (".get_class($this)." class | ".var_dump("__METHOD__").") : ".
@@ -42,7 +46,7 @@
             /*************************
              * @functionName: detachChildComponent
              * @argument: 
-             *   $handler: handle to the detaching child 'Component' class object
+             *   $handler: handle to the detaching child "Component" class object
              * @returns:
              *   bool: success or fail for detach
              *************************/
@@ -102,9 +106,33 @@
              * @returns:
              *   
              *************************/
-            if(method_exists(get_class($this),'start')) $this->start();
-            if(method_exists(get_class($this),'code')) $this->code();
-            if(method_exists(get_class($this),'end')) $this->end();   
+            if(method_exists(get_class($this),"start")) $this->start();
+            if(method_exists(get_class($this),"code")) $this->code();
+            if(method_exists(get_class($this),"end")) $this->end();   
+        }
+    }
+
+    trait CSSMinifier{
+        protected static function writeCSSFile($writeLocation, $contentBuffer){
+            file_put_contents($writeLocation, $contentBuffer="");
+        }protected static function getMinifiedCSS($filename){
+            $buffer = file_get_contents($filename);
+            /* -- CSS minify logic -- */
+            $buffer = preg_replace("!/\*[^*]*\*+([^/][^*]*\*+)*/!", "", $buffer);
+            $buffer = str_replace(": ", ":", $buffer);
+            $buffer = str_replace(array("\r\n", "\r", "\n", "\t", "  ", "    ", "    "), "", $buffer);
+            /* -- (Source: https://stackoverflow.com/questions/5389822/how-to-minify-js-or-css-on-the-fly) -- */
+            return $buffer;
+        }
+    }
+
+    trait JSMinifier{ /* -- Note: make sure the JS code has semicolumns for indicating the end of line -- */
+        protected static function writeJSFile($writeLocation, $contentBuffer=""){
+            file_put_contents($writeLocation, $contentBuffer);            
+        }protected static function getMinifiedJS($filename){
+            $js = file_get_contents($filename);
+            $minifiedJs = JSMin::minify($js);
+            return $minifiedJs;
         }
     }
 
@@ -112,6 +140,7 @@
         private $ignoreDefaultMeta;
         public function __construct($ignoreDefaultMeta=FALSE){
             $this->ignoreDefaultMeta = $ignoreDefaultMeta;
+            $this->title = "Hello World!";
         }
 
         public function setTitle($value){$this->title=$value;}
@@ -129,27 +158,27 @@
         public function setMetaCacheControl($value){$this->metaCacheControl=$value;}
         private function _defaultMeta(){     
 ?>
-            <meta charset='UTF-8'>
+            <meta charset="UTF-8">
             <meta http-equiv = "Content-Type" content = "text/html; charset = UTF-8" />
-            <?php if($this->metaKeyword): ?><meta name='keywords' content='<?php echo $this->metaKeyword; ?>'> <?php endif ?>
-            <?php if($this->metaDescription): ?><meta name='description' content='<?php echo $this->metaDesription; ?>'> <?php endif ?>
-            <?php if($this->metaSubject): ?><meta name='subject' content='<?php echo $this->metaSubject; ?>'> <?php endif ?>
-            <?php if($this->metaCompanyCopyright): ?><meta name='copyright' content='<?php echo $this->metaCompanyCopyright; ?>'> <?php endif ?>
-            <?php if($this->metaRobots): ?><meta name='robots' content='<?php echo $this->metaRobots; ?>'><?php endif ?>
-            <?php if($this->metaAuthor): ?><meta name='author' content='<?php echo $this->metaAuthor; ?>'> <?php endif ?>
-            <?php if($this->metaDesigner): ?><meta name='designer' content='<?php echo $this->metaDesigner; ?>'> <?php endif ?>
-            <?php if($this->metaOwner): ?><meta name='owner' content='<?php echo $this->metaOwner; ?>'> <?php endif ?>
-            <?php if($this->metaURL): ?><meta name='url' content='<?php echo $this->metaURL; ?>'> <?php endif ?>
-            <?php if($this->metaExpires): ?><meta http-equiv='Expires' content='<?php echo $this->metaExpires; ?>'> <?php endif ?>
-            <?php if($this->metaPragma): ?><meta http-equiv='Pragma' content='<?php echo $this->metaPragma; ?>'> <?php endif ?>
-            <?php if($this->metaCacheControl): ?><meta http-equiv='Cache-Control' content='<?php echo $this->metaCacheControl; ?>'> <?php endif ?>
+            <?php if($this->metaKeyword): ?><meta name="keywords" content="<?php echo $this->metaKeyword; ?>"> <?php endif ?>
+            <?php if($this->metaDescription): ?><meta name="description" content="<?php echo $this->metaDesription; ?>"> <?php endif ?>
+            <?php if($this->metaSubject): ?><meta name="subject" content="<?php echo $this->metaSubject; ?>"> <?php endif ?>
+            <?php if($this->metaCompanyCopyright): ?><meta name="copyright" content="<?php echo $this->metaCompanyCopyright; ?>"> <?php endif ?>
+            <?php if($this->metaRobots): ?><meta name="robots" content="<?php echo $this->metaRobots; ?>"><?php endif ?>
+            <?php if($this->metaAuthor): ?><meta name="author" content="<?php echo $this->metaAuthor; ?>"> <?php endif ?>
+            <?php if($this->metaDesigner): ?><meta name="designer" content="<?php echo $this->metaDesigner; ?>"> <?php endif ?>
+            <?php if($this->metaOwner): ?><meta name="owner" content="<?php echo $this->metaOwner; ?>"> <?php endif ?>
+            <?php if($this->metaURL): ?><meta name="url" content="<?php echo $this->metaURL; ?>"> <?php endif ?>
+            <?php if($this->metaExpires): ?><meta http-equiv="Expires" content="<?php echo $this->metaExpires; ?>"> <?php endif ?>
+            <?php if($this->metaPragma): ?><meta http-equiv="Pragma" content="<?php echo $this->metaPragma; ?>"> <?php endif ?>
+            <?php if($this->metaCacheControl): ?><meta http-equiv="Cache-Control" content="<?php echo $this->metaCacheControl; ?>"> <?php endif ?>
 <?php
         }
 
         public function getTitle(){return $this->title;}
         public function generateMetaContent(){
             if($this->ignoreDefaultMeta!==FALSE) $this->_defaultMeta();
-            if(method_exists(get_class($this),'code')) $this->code();
+            if(method_exists(get_class($this),"code")) $this->code();
         }
         /* -- user-defined function -- */
         /* public/private function code() */
@@ -168,19 +197,19 @@
 
         /* -- Setters -- */
         protected function setNav($navigationComponent){
-            if(is_a($navigationComponent,'Component')!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
+            if(is_a($navigationComponent,"Component")!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
             $this->navigation = $navigationComponent;
         }
         protected function setHeader($headerComponent){
-            if(is_a($headerComponent,'Component')!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
+            if(is_a($headerComponent,"Component")!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
             $this->header = $headerComponent;
         }
         protected function setMain($mainComponent){
-            if(is_a($mainComponent,'Component')!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
+            if(is_a($mainComponent,"Component")!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
             $this->main = $mainComponent;
         }
         protected function setFooter($footerComponent){
-            if(is_a($footerComponent,'Component')!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
+            if(is_a($footerComponent,"Component")!==TRUE){raiseComponentError(get_class($this), var_dump("__METHOD__"));}
             $this->footer = $footerComponent;
         }
 
@@ -192,28 +221,48 @@
     }
 
 
-    class Document extends Component{
+    class Document extends Component{ 
         use View{
             View::__construct as private __viewConstruct;
         }
         use MetaContent{
             MetaContent::__construct as private __metaConstruct;
         }
-        //use CSSMinifier, JSMinifier;
+        use CSSMinifier, JSMinifier;
 
         private $meta, $nav, $header, $main, $footer,$tag,$minifyCSS,$minifyJS;
-        public function __construct($tag,$minifyInBodyCSS=FALSE,$minifyInBodyJS=FALSE,$ignoreDefaultMeta=FALSE){
+        public function __construct($tag,$minifyCSS=FALSE,$minifyJS=FALSE,$ignoreDefaultMeta=FALSE){
             $this->__viewConstruct();
             $this->__metaConstruct($ignoreDefaultMeta);
-            $this->minifyCSS = $minifyInBodyCSS;
-            $this->minifyJS  = $minifyInBodyJS;
+            $this->minifyCSS = $minifyCSS;
+            $this->minifyJS  = $minifyJS;
             $this->tag       = $tag;
         }
 
-        //public generateCSS(){}
-        //public generateJS(){}
+        protected static function generateMinifiedCSS($tag){
+            if(file_exists(__DIR__."/../minified_bundle/all-body-".$tag.".min.css")!==TRUE){
+                $cssInBodyBuffer = "";
+                foreach( static::$cssArray as $cssFile){
+                    $cssInBodyBuffer .= static::getMinifiedCSS($cssFile);
+                }
+                static::writeCSSFile(__DIR__."/../minified_bundle/all-body-".$tag.".min.css", $cssInBodyBuffer);
+            }else{
+                static::writeToLogFile("[Info]:".date("l jS \of F Y h:i:s A").": CSS In-Body File Exists!\n");
+            }
+        }
+        protected static function generateMinifiedJS($tag){
+            if(file_exists(__DIR__."/../minified_bundle/all-body-".$tag.".min.js")!==TRUE){
+                $jsInBodyBuffer = "";
+                foreach(static::$jsArray as $jsFile){
+                    $jsInBodyBuffer .= static::getMinifiedJS($jsFile);
+                }
+                static::writeCSSFile(__DIR__."/../minified_bundle/all-body-".$tag.".min.js", $jsInBodyBuffer);
+            }else{
+                static::writeToLogFile("[Info]:".date("l jS \of F Y h:i:s A").": JS In-Body File Exists!\n");
+            }
+        }
         public function getHTMLCode(){
-            if(method_exists(get_class($this),'start')) $this->start();
+            if(method_exists(get_class($this),"start")) $this->start();
 
 ?>
             <!DOCTYPE html>
@@ -231,13 +280,25 @@
                 </body>
             </html>
 <?php
-            if(method_exists(get_class($this),'end')) $this->end();
+            if(method_exists(get_class($this),"end")) $this->end();
+            if($this->minifyCSS) $this->generateMinifiedCSS($this->tag);
+            if($this->minifyJS) $this->generateMinifiedJS($this->tag);
         }
 
         private function _contentDisplay(){$this->_getNav();$this->_getHeader();$this->_getMain();$this->_getFooter();}
-        private function _getInHeadCSS(){echo "<link rel='stylesheet' type='text/css' href='all-head-".$this->tag.".min.css' />";}
-        private function _getInBodyCSS(){echo "<link rel='stylesheet' type='text/css' href='all-body-".$this->tag.".min.css' />";}
-        private function _getInHeadJS(){echo "<script src='all-head-".$this->tag.".min.js'></script>";}
-        private function _getInBodyJS(){echo "<script src='all-body-".$this->tag.".min.js'></script>";}
+        private function _getInHeadCSS(){echo "<link rel='stylesheet' type='text/css' href='./res/minified_bundle/all-head-".$this->tag.".min.css' />";}
+        private function _getInBodyCSS(){echo "<link rel='stylesheet' type='text/css' href='./res/minified_bundle/all-body-".$this->tag.".min.css' />";}
+        private function _getInHeadJS(){echo "<script src='./res/minified_bundle/all-head-".$this->tag.".min.js'></script>";}
+        private function _getInBodyJS(){echo "<script src='./res/minified_bundle/all-body-".$this->tag.".min.js'></script>";}
     }
+
+
+
+/*
+    To-do:
+    1. bug-fix: handle error thrown (non-strict working mode) : Make the errors directed to the logs (not shown when page is displayed)
+    2. bug-fix: Component-level decision for in-head or in-body and Document-level seperation and merging of css and js files
+    3. bug-fix: type checking of parameters
+    4. reduce Component code, refer to @Note-1
+*/
 ?>

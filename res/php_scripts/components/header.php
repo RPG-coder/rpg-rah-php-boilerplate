@@ -15,9 +15,14 @@
                 ****************************************/
         }
         function code(){
-                /* -- HTML Code Here -- */
+                /* -- Your HTML Code here ... -- */
 ?>
-                <h1>Hello World</h1>
+
+                <!-- Your HTML Code here ...-->
+                <header>
+                     <h1>Hello World</h1>
+                </header>
+
 <?php
         }
         function end(){}

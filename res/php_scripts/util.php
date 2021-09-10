@@ -1,4 +1,10 @@
 <?php
+/*
+    To-do:
+    1. bug-fix: type checking of parameters
+    2. reduce Component code, refer to @Note-1
+*/
+
     class Component{
         private $childArray;
         private static $jsArray=array(), $cssArray=array(), $jsCounter=0, $cssCounter=0;
@@ -10,7 +16,7 @@
             $this->counter = 0; 
         }
 
-        /* -- Later Version To-do: Reduce the code below ... introduce reusability -- */
+        /* -- @Note-1: Later Version To-do. Reduce the code below ... introduce reusability -- */
         protected function attachChildComponent($childComponent){
             /*************************
              * @functionName: attachChildComponent
@@ -82,9 +88,9 @@
 
         /* -- defined at user-level -- */
         /* *****************************
-           public start();
-           public code();
-           public end();
+           public/private function start();
+           public/private function code();
+           public/private function end();
          * ***************************** */
 
         /* -- in-utility functions (Not for a users to use direct)-- */
@@ -100,6 +106,54 @@
             if(method_exists(get_class($this),'code')) $this->code();
             if(method_exists(get_class($this),'end')) $this->end();   
         }
+    }
+
+    trait MetaContent{
+        private $ignoreDefaultMeta;
+        public function __construct($ignoreDefaultMeta=FALSE){
+            $this->ignoreDefaultMeta = $ignoreDefaultMeta;
+        }
+
+        public function setTitle($value){$this->title=$value;}
+        public function setMetaKeyword($value){$this->metaKeyword=$value;}
+        public function setMetaDescription($value){$this->metaDescription=$value;}
+        public function setMetaSubject($value){$this->metaSubject=$value;}
+        public function setMetaCompanyCopyright($value){$this->metaCompanyCopyright=$value;}
+        public function setMetaRobots($value){$this->metaRobots=$value;}
+        public function setMetaAuthor($value){$this->metaAuthor=$value;}
+        public function setMetaDesigner($value){$this->metaDesigner=$value;}
+        public function setMetaOwner($value){$this->metaOwner=$value;}
+        public function setMetaURL($value){$this->metaURL=$value;}
+        public function setMetaPragma($value){$this->metaPragma=$value;}
+        public function setMetaExpires($value){$this->metaExpires=$value;}
+        public function setMetaCacheControl($value){$this->metaCacheControl=$value;}
+        private function _defaultMeta(){     
+?>
+            <meta charset='UTF-8'>
+            <meta http-equiv = "Content-Type" content = "text/html; charset = UTF-8" />
+            <?php if($this->metaKeyword): ?><meta name='keywords' content='<?php echo $this->metaKeyword; ?>'> <?php endif ?>
+            <?php if($this->metaDescription): ?><meta name='description' content='<?php echo $this->metaDesription; ?>'> <?php endif ?>
+            <?php if($this->metaSubject): ?><meta name='subject' content='<?php echo $this->metaSubject; ?>'> <?php endif ?>
+            <?php if($this->metaCompanyCopyright): ?><meta name='copyright' content='<?php echo $this->metaCompanyCopyright; ?>'> <?php endif ?>
+            <?php if($this->metaRobots): ?><meta name='robots' content='<?php echo $this->metaRobots; ?>'><?php endif ?>
+            <?php if($this->metaAuthor): ?><meta name='author' content='<?php echo $this->metaAuthor; ?>'> <?php endif ?>
+            <?php if($this->metaDesigner): ?><meta name='designer' content='<?php echo $this->metaDesigner; ?>'> <?php endif ?>
+            <?php if($this->metaOwner): ?><meta name='owner' content='<?php echo $this->metaOwner; ?>'> <?php endif ?>
+            <?php if($this->metaURL): ?><meta name='url' content='<?php echo $this->metaURL; ?>'> <?php endif ?>
+            <?php if($this->metaExpires): ?><meta http-equiv='Expires' content='<?php echo $this->metaExpires; ?>'> <?php endif ?>
+            <?php if($this->metaPragma): ?><meta http-equiv='Pragma' content='<?php echo $this->metaPragma; ?>'> <?php endif ?>
+            <?php if($this->metaCacheControl): ?><meta http-equiv='Cache-Control' content='<?php echo $this->metaCacheControl; ?>'> <?php endif ?>
+<?php
+        }
+
+        public function getTitle(){return $this->title;}
+        public function generateMetaContent(){
+            if($this->ignoreDefaultMeta!==FALSE) $this->_defaultMeta();
+            if(method_exists(get_class($this),'code')) $this->code();
+        }
+        /* -- user-defined function -- */
+        /* public/private function code() */
+
     }
 
     trait View{
@@ -142,12 +196,15 @@
         use View{
             View::__construct as private __viewConstruct;
         }
-        //use MetaContent;
+        use MetaContent{
+            MetaContent::__construct as private __metaConstruct;
+        }
         //use CSSMinifier, JSMinifier;
 
         private $meta, $nav, $header, $main, $footer,$tag,$minifyCSS,$minifyJS;
-        public function __construct($tag,$minifyInBodyCSS=FALSE,$minifyInBodyJS=FALSE){
+        public function __construct($tag,$minifyInBodyCSS=FALSE,$minifyInBodyJS=FALSE,$ignoreDefaultMeta=FALSE){
             $this->__viewConstruct();
+            $this->__metaConstruct($ignoreDefaultMeta);
             $this->minifyCSS = $minifyInBodyCSS;
             $this->minifyJS  = $minifyInBodyJS;
             $this->tag       = $tag;
@@ -162,8 +219,8 @@
             <!DOCTYPE html>
             <html lang="en">
                 <head>
-                    <?php /*$this->getMeta();*/ ?>
-                    <title><?php /*echo $this->getTitle();*/ ?></title>
+                    <?php $this->generateMetaContent(); ?>
+                    <title><?php echo $this->getTitle(); ?></title>
                     <?php $this->_getInHeadCSS(); ?>
                     <?php $this->_getInHeadJS(); ?>
                 </head>
@@ -174,7 +231,7 @@
                 </body>
             </html>
 <?php
-            if(method_exists(get_class($this),'end')) $this->end();;
+            if(method_exists(get_class($this),'end')) $this->end();
         }
 
         private function _contentDisplay(){$this->_getNav();$this->_getHeader();$this->_getMain();$this->_getFooter();}

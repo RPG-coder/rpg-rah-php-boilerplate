@@ -20,7 +20,7 @@
 
                 <!-- Your HTML Code here ...-->
                 <footer>
-                    <p> &copy; Under Apache 2.0 Licence</p>
+                    <p> &copy; Under BSD Licence Clause 3 Licence</p>
                 </footer>
 
 <?php
